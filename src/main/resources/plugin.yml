@@ -1,0 +1,12 @@
+name: TimePlayed
+version: '1.0-SNAPSHOT'
+main: org.queercraft.timePlayed.TimePlayed
+api-version: '1.21'
+load: POSTWORLD
+depend: [Plan]
+softdepend: [Plan]
+commands:
+  playtime:
+    description: Shows a player's playtime for the last 7 and 30 days
+    usage: /playtime <player>
+    aliases: [pt]
