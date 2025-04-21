@@ -40,8 +40,9 @@ public class command implements CommandExecutor {
     private void sendPlaytime(CommandSender sender, String playerName, UUID playerUUID) {
         long days30 = queryAPI.getPlaytimeLast30d(playerUUID);
         long days7 = queryAPI.getPlaytimeLast7d(playerUUID);
-
+        long today = queryAPI.getPlaytimeToday(playerUUID);
         sender.sendMessage("§6=== Playtime for " + playerName + " ===");
+        sender.sendMessage("§aToday: §f" + formatTime(today));
         sender.sendMessage("§aLast 7 days: §f" + formatTime(days7));
         sender.sendMessage("§aLast 30 days: §f" + formatTime(days30));
     }

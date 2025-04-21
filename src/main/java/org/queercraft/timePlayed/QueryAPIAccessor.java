@@ -5,6 +5,7 @@ import com.djrapitops.plan.query.CommonQueries;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.Calendar;
 
 public class QueryAPIAccessor {
 
@@ -42,6 +43,24 @@ public class QueryAPIAccessor {
                 .orElseThrow(IllegalStateException::new);
         return queryService.getCommonQueries().fetchPlaytime(
                 playerUUID, serverUUID, weekAgo, now
+        );
+    }
+
+    public long getPlaytimeToday(UUID playerUUID) {
+        long now = System.currentTimeMillis();
+
+        //This is fucking bullshit but eh
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        long startOfToday = calendar.getTimeInMillis();
+
+        UUID serverUUID = queryService.getServerUUID()
+                .orElseThrow(IllegalStateException::new);
+        return queryService.getCommonQueries().fetchPlaytime(
+                playerUUID, serverUUID, startOfToday, now
         );
     }
 
