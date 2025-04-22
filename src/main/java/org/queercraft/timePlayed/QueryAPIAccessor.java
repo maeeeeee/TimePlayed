@@ -6,23 +6,36 @@ import com.djrapitops.plan.query.CommonQueries;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.Calendar;
+import java.util.logging.Logger;
 
 public class QueryAPIAccessor {
 
+    private static final Logger logger = Logger.getLogger(QueryAPIAccessor.class.getName());
     private final QueryService queryService;
 
     public QueryAPIAccessor(QueryService queryService) {
+        logger.info("Initializing QueryAPIAccessor.");
         this.queryService = queryService;
-        ensureDBSchemaMatch();
+        try {
+            ensureDBSchemaMatch();
+            logger.info("Database schema validated successfully.");
+        } catch (IllegalStateException e) {
+            logger.severe("Database schema validation failed: " + e.getMessage());
+            throw e; // Re-throwing to ensure proper exception handling in the caller
+        }
     }
 
     private void ensureDBSchemaMatch() {
+        logger.info("Ensuring database schema matches expected structure.");
         CommonQueries queries = queryService.getCommonQueries();
-        if (
-                !queries.doesDBHaveTable("plan_sessions")
-                        || !queries.doesDBHaveTableColumn("plan_sessions", "uuid")
-        ) {
-            throw new IllegalStateException("Different table schema");
+        boolean hasSessionsTable = queries.doesDBHaveTable("plan_sessions");
+        boolean hasUuidColumn = queries.doesDBHaveTableColumn("plan_sessions", "user_id");
+        if (!hasSessionsTable || !hasUuidColumn) {
+            String errorMessage = "Different table schema detected: "
+                    + "plan_sessions table exists: " + hasSessionsTable
+                    + ", uuid column exists: " + hasUuidColumn;
+            logger.warning(errorMessage);
+            throw new IllegalStateException(errorMessage);
         }
     }
 
