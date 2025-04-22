@@ -7,7 +7,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.Bukkit;
 
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 public class command implements CommandExecutor {
     private final QueryAPIAccessor queryAPI;
@@ -18,39 +17,66 @@ public class command implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length != 1) {
-            sender.sendMessage("§cUsage: /playtime <player>");
-            return true;
-        }
+        Player target;
+        try {
+            if (args.length > 1) {
+                sender.sendMessage("§cUsage: /playtime <player>");
+                return true;
+            }else if(args.length == 0){
+                //Run on self
+                target = Bukkit.getPlayer(sender.getName());
+            }else{
+                String playerName = args[0];
+                target = Bukkit.getPlayer(playerName);
+            }
 
-        String playerName = args[0];
-        Player target = Bukkit.getPlayer(playerName);
-
-        if (target == null) {
-            // Try to get offline player
-            UUID playerUUID = Bukkit.getOfflinePlayer(playerName).getUniqueId();
-            sendPlaytime(sender, playerName, playerUUID);
-        } else {
-            sendPlaytime(sender, target.getName(), target.getUniqueId());
+            if (target == null && args.length == 1) {
+                // Try to get offline player
+                String playerName = args[0];
+                UUID playerUUID = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+                sendPlaytime(sender, playerName, playerUUID);
+            } else {
+                sendPlaytime(sender, target.getName(), target.getUniqueId());
+            }
+        } catch (Exception e) {
+            sender.sendMessage("§cThe requested username does not exist. You can use /realname to get the username of a nicknamed player if they are online! ");
         }
 
         return true;
     }
 
     private void sendPlaytime(CommandSender sender, String playerName, UUID playerUUID) {
+        long total = queryAPI.getPlaytimeTotal(playerUUID);
         long days30 = queryAPI.getPlaytimeLast30d(playerUUID);
         long days7 = queryAPI.getPlaytimeLast7d(playerUUID);
         long today = queryAPI.getPlaytimeToday(playerUUID);
+        //For some reason the §f formatting here causes some of the times to not be visible in AMP. They do appear ingame so probably some weird AMP fuckery
         sender.sendMessage("§6=== Playtime for " + playerName + " ===");
         sender.sendMessage("§aToday: §f" + formatTime(today));
         sender.sendMessage("§aLast 7 days: §f" + formatTime(days7));
         sender.sendMessage("§aLast 30 days: §f" + formatTime(days30));
+        sender.sendMessage("§aTotal: §f" + formatTime(total));
     }
 
     private String formatTime(long milliseconds) {
-        long hours = TimeUnit.MILLISECONDS.toHours(milliseconds);
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds) % 60;
+        long totalMinutes = (milliseconds / 1000) / 60;
+        long days = (totalMinutes / 60) / 24;
+        long hours = (totalMinutes - (days*24*60)) / 60;
+        long minutes = (totalMinutes - (days*24*60)) - (hours*60);
 
-        return String.format("%dh %dm", hours, minutes);
+        StringBuilder timeString = new StringBuilder();
+
+        if (days > 0) {
+            timeString.append(days).append("d ");
+        }
+        if (hours > 0 || days > 0) {
+            timeString.append(hours).append("h ");
+        }
+        if (minutes > 0 || timeString.length() == 0) {
+            timeString.append(minutes).append("m");
+        }
+
+        return timeString.toString();
     }
+
 }

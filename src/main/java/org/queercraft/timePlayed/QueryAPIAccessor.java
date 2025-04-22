@@ -3,6 +3,9 @@ package org.queercraft.timePlayed;
 import com.djrapitops.plan.query.QueryService;
 import com.djrapitops.plan.query.CommonQueries;
 
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.Calendar;
@@ -37,6 +40,30 @@ public class QueryAPIAccessor {
             logger.warning(errorMessage);
             throw new IllegalStateException(errorMessage);
         }
+    }
+
+    public long getPlaytimeTotal(UUID playerUUID) {
+        //Get Plan user id for selected player
+        String user_id = queryService.query(
+                "SELECT id FROM plan_users WHERE uuid=?",
+                (PreparedStatement statement) -> {
+                    statement.setString(1, playerUUID.toString());
+                    try (ResultSet results = statement.executeQuery()) {
+                        return results.next() ? results.getString("id") : null;
+                    }
+                }
+        );
+        //Get total recorded playtime
+        String totalPlaytime = queryService.query(
+                "SELECT (survival_time + creative_time + adventure_time + spectator_time) AS total_time FROM plan_world_times WHERE user_id=?",
+                (PreparedStatement statement) -> {
+                    statement.setString(1, user_id);
+                    try (ResultSet results = statement.executeQuery()) {
+                        return results.next() ? results.getString("total_time") : null;
+                    }
+                }
+        );
+        return Long.parseLong(totalPlaytime);
     }
 
     public long getPlaytimeLast30d(UUID playerUUID) {
