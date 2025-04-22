@@ -1,10 +1,10 @@
 package org.queercraft.timePlayed;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.Bukkit;
 
 import java.util.UUID;
 
@@ -22,10 +22,10 @@ public class command implements CommandExecutor {
             if (args.length > 1) {
                 sender.sendMessage("§cUsage: /playtime <player>");
                 return true;
-            }else if(args.length == 0){
+            } else if (args.length == 0) {
                 //Run on self
                 target = Bukkit.getPlayer(sender.getName());
-            }else{
+            } else {
                 String playerName = args[0];
                 target = Bukkit.getPlayer(playerName);
             }
@@ -47,22 +47,22 @@ public class command implements CommandExecutor {
 
     private void sendPlaytime(CommandSender sender, String playerName, UUID playerUUID) {
         long total = queryAPI.getPlaytimeTotal(playerUUID);
-        long days30 = queryAPI.getPlaytimeLast30d(playerUUID);
-        long days7 = queryAPI.getPlaytimeLast7d(playerUUID);
+        long days30 = queryAPI.getPlaytimeThisMonth(playerUUID);
+        long days7 = queryAPI.getPlaytimeThisWeek(playerUUID);
         long today = queryAPI.getPlaytimeToday(playerUUID);
         //For some reason the §f formatting here causes some of the times to not be visible in AMP. They do appear ingame so probably some weird AMP fuckery
         sender.sendMessage("§6=== Playtime for " + playerName + " ===");
         sender.sendMessage("§aToday: §f" + formatTime(today));
-        sender.sendMessage("§aLast 7 days: §f" + formatTime(days7));
-        sender.sendMessage("§aLast 30 days: §f" + formatTime(days30));
+        sender.sendMessage("§aThis Week: §f" + formatTime(days7));
+        sender.sendMessage("§aThis Month: §f" + formatTime(days30));
         sender.sendMessage("§aTotal: §f" + formatTime(total));
     }
 
     private String formatTime(long milliseconds) {
         long totalMinutes = (milliseconds / 1000) / 60;
         long days = (totalMinutes / 60) / 24;
-        long hours = (totalMinutes - (days*24*60)) / 60;
-        long minutes = (totalMinutes - (days*24*60)) - (hours*60);
+        long hours = (totalMinutes - (days * 24 * 60)) / 60;
+        long minutes = (totalMinutes - (days * 24 * 60)) - (hours * 60);
 
         StringBuilder timeString = new StringBuilder();
 

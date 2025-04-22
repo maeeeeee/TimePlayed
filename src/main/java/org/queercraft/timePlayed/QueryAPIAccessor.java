@@ -1,14 +1,15 @@
 package org.queercraft.timePlayed;
 
-import com.djrapitops.plan.query.QueryService;
 import com.djrapitops.plan.query.CommonQueries;
-
+import com.djrapitops.plan.query.QueryService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Calendar;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 public class QueryAPIAccessor {
@@ -66,23 +67,36 @@ public class QueryAPIAccessor {
         return Long.parseLong(totalPlaytime);
     }
 
-    public long getPlaytimeLast30d(UUID playerUUID) {
+    public long getPlaytimeThisMonth(UUID playerUUID) {
         long now = System.currentTimeMillis();
-        long monthAgo = now - TimeUnit.DAYS.toMillis(30L);
+        LocalDateTime startOfMonth = LocalDateTime.now()
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        long startOfMonthMillis = startOfMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
         UUID serverUUID = queryService.getServerUUID()
                 .orElseThrow(IllegalStateException::new);
         return queryService.getCommonQueries().fetchPlaytime(
-                playerUUID, serverUUID, monthAgo, now
+                playerUUID, serverUUID, startOfMonthMillis, now
         );
     }
 
-    public long getPlaytimeLast7d(UUID playerUUID) {
+    public long getPlaytimeThisWeek(UUID playerUUID) {
         long now = System.currentTimeMillis();
-        long weekAgo = now - TimeUnit.DAYS.toMillis(7L);
+        LocalDateTime startOfWeek = LocalDateTime.now()
+                .with(DayOfWeek.MONDAY)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        long startOfWeekMillis = startOfWeek.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         UUID serverUUID = queryService.getServerUUID()
                 .orElseThrow(IllegalStateException::new);
         return queryService.getCommonQueries().fetchPlaytime(
-                playerUUID, serverUUID, weekAgo, now
+                playerUUID, serverUUID, startOfWeekMillis, now
         );
     }
 
