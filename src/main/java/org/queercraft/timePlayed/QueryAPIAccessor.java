@@ -55,7 +55,7 @@ public class QueryAPIAccessor {
         );
         //Get total recorded playtime
         String totalPlaytime = queryService.query(
-                "SELECT (survival_time + creative_time + adventure_time + spectator_time) AS total_time FROM plan_world_times WHERE user_id=?",
+                "SELECT SUM(survival_time + creative_time + adventure_time + spectator_time) AS total_time FROM plan_world_times WHERE user_id=?",
                 (PreparedStatement statement) -> {
                     statement.setString(1, user_id);
                     try (ResultSet results = statement.executeQuery()) {
