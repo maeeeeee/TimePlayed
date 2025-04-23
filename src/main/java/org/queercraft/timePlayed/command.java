@@ -7,9 +7,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class command implements CommandExecutor {
     private final QueryAPIAccessor queryAPI;
+    private static final Logger logger = Logger.getLogger(QueryAPIAccessor.class.getName());
 
     public command(QueryAPIAccessor queryAPI) {
         this.queryAPI = queryAPI;
@@ -40,6 +42,11 @@ public class command implements CommandExecutor {
             }
         } catch (Exception e) {
             sender.sendMessage("§cThe requested username does not exist. You can use /realname to get the username of a nicknamed player if they are online! ");
+            logger.warning("Exception type: " + e.getClass().getName());
+            logger.warning("Message: " + e.getMessage());
+            for (StackTraceElement stackTraceLine : e.getStackTrace()) {
+                logger.warning("    at " + stackTraceLine);
+            }
         }
 
         return true;
@@ -52,6 +59,7 @@ public class command implements CommandExecutor {
         long today = queryAPI.getPlaytimeToday(playerUUID);
         //For some reason the §f formatting here causes some of the times to not be visible in AMP. They do appear ingame so probably some weird AMP fuckery
         sender.sendMessage("§6=== Playtime for " + playerName + " ===");
+        sender.sendMessage("§aDaily, Weekly and Monthly values update when you log in");
         sender.sendMessage("§aToday: §f" + formatTime(today));
         sender.sendMessage("§aThis Week: §f" + formatTime(days7));
         sender.sendMessage("§aThis Month: §f" + formatTime(days30));
