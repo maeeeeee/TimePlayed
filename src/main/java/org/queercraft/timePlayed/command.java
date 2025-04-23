@@ -55,7 +55,7 @@ public class command implements CommandExecutor {
         sender.sendMessage("§aToday: §f" + formatTime(today));
         sender.sendMessage("§aThis Week: §f" + formatTime(days7));
         sender.sendMessage("§aThis Month: §f" + formatTime(days30));
-        sender.sendMessage("§aTotal: §f" + formatTime(total));
+        //sender.sendMessage("§aTotal: §fSee /joindate"); Disabled in favour of PlayTimes total ontime via /joindate
     }
 
     private String formatTime(long milliseconds) {
