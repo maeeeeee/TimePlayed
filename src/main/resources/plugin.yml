@@ -10,3 +10,7 @@ commands:
     description: Shows a player's playtime for today as well as the last 7 and 30 days
     usage: /playtime <player>
     aliases: [pt]
+  joindate:
+    description: Shows the date a player joined the server for the first time
+    usage: /joindate <player>
+    aliases: [jd]
