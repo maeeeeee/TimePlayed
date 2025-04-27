@@ -13,11 +13,13 @@ import java.io.File;
 import java.io.FileReader;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
 public class command implements CommandExecutor {
-    private final QueryAPIAccessor queryAPI;
+    private QueryAPIAccessor queryAPI;
     private static final Logger logger = Logger.getLogger(command.class.getName());
 
     public command(QueryAPIAccessor queryAPI) {
@@ -67,12 +69,37 @@ public class command implements CommandExecutor {
                     sendPlaytime(sender, target.getName(), target.getUniqueId());
                 }
             }
-        } catch (Exception e) {
+        } catch (java.lang.NumberFormatException e) {
             sender.sendMessage("§cThe requested username does not exist. You can use /realname to get the username of a nicknamed player if they are online! ");
             logger.warning("Exception type: " + e.getClass().getName());
             logger.warning("Message: " + e.getMessage());
-            for (StackTraceElement stackTraceLine : e.getStackTrace()) {
-                logger.warning("    at " + stackTraceLine);
+        } catch (Exception e) {
+            //DB connection went down, create new Accessor
+            if(Objects.equals(e.getMessage(), "SQL Failure: database connection closed")){
+                logger.warning("Exception type: " + e.getClass().getName());
+                logger.warning("Message: " + e.getMessage());
+                logger.warning("DB Connection is down, creating new QueryAPIAccessor...");
+                try {
+                    Optional<QueryAPIAccessor> queryAPIOptional = new PlanHook().hookIntoPlan();
+                    this.queryAPI = queryAPIOptional.get();
+                }catch (Exception ex){
+                    logger.severe("An unexpected error occurred while trying to reestablish DB connection:");
+                    logger.severe("Exception type: " + ex.getClass().getName());
+                    logger.severe("Message: " + ex.getMessage());
+                    for (StackTraceElement stackTraceLine : ex.getStackTrace()) {
+                        logger.severe("    at " + stackTraceLine);
+                    }
+                }
+                logger.warning("Successfully created new QueryAPIAccessor");
+                sender.sendMessage("§cSomething went wrong. Please try again!");
+            } else{
+                logger.severe("An unexpected error occurred:");
+                logger.severe("Exception type: " + e.getClass().getName());
+                logger.severe("Message: " + e.getMessage());
+                for (StackTraceElement stackTraceLine : e.getStackTrace()) {
+                    logger.severe("    at " + stackTraceLine);
+                }
+                sender.sendMessage("§cAn unexpected error occurred");
             }
         }
         return true;
@@ -97,7 +124,7 @@ public class command implements CommandExecutor {
         sender.sendMessage("§aToday: §f" + formatTimeMillis(today));
         sender.sendMessage("§aThis Week: §f" + formatTimeMillis(days7));
         sender.sendMessage("§aThis Month: §f" + formatTimeMillis(days30));
-        sender.sendMessage("§aTotal: §f" + formatTimeMillis((totalPlaytime / 20) * 1000)); //totalPlaytime is in ticks, needs to be converted to milliseconds
+        sender.sendMessage("§aTotal: §f" + formatTimeMillis(totalPlaytime / 20 * 1000L)); //totalPlaytime is in ticks, needs to be converted to milliseconds
         sender.sendMessage("§aJoined on: §f" + joindate);
     }
 
@@ -142,14 +169,23 @@ public class command implements CommandExecutor {
         Calendar calendar = Calendar.getInstance();
 
         if (player == null) {
-            calendar.setTimeInMillis(Bukkit.getOfflinePlayer(uuid).getFirstPlayed());
+            long joinTimestamp = Bukkit.getOfflinePlayer(uuid).getFirstPlayed();
+            if(joinTimestamp == 0){
+                return "Has never joined";
+            }
+            calendar.setTimeInMillis(joinTimestamp);
+
             return simpleDateFormat.format(calendar.getTime());
         } else if (player.hasPlayedBefore()) {
-            calendar.setTimeInMillis(player.getFirstPlayed());
+            long joinTimestamp = player.getFirstPlayed();
+            if(joinTimestamp == 0){
+                return "Has never joined";
+            }
+            calendar.setTimeInMillis(joinTimestamp);
             return simpleDateFormat.format(calendar.getTime());
         }
 
-        return "Never Joined";
+        return "Has never joined";
     }
 
     public long getOnlineStatistic(Player player) {
