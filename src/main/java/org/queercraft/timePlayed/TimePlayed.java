@@ -26,6 +26,7 @@ public final class TimePlayed extends JavaPlugin {
                 queryAPI = queryAPIOptional.get();
                 Objects.requireNonNull(getCommand("playtime")).setExecutor(new command(queryAPI));
                 Objects.requireNonNull(getCommand("joindate")).setExecutor(new command(queryAPI));
+                Objects.requireNonNull(getCommand("realnameoffline")).setExecutor(new command(queryAPI));
             } else {
                 getLogger().warning("Failed to hook into Plan, disabling TimePlayed...");
                 getServer().getPluginManager().disablePlugin(this);

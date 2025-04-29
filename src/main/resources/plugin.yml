@@ -14,3 +14,7 @@ commands:
     description: Shows the date a player joined the server for the first time
     usage: /joindate <player>
     aliases: [jd]
+  realnameoffline:
+    description: Attempts to fetch the username corresponding to a nickname even if the player is offline. If the nickname exists more than once, the result can be inaccurate
+    usage: /realnameoffline <player>
+    aliases: [rno]
