@@ -7,6 +7,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,10 +15,12 @@ import java.util.logging.Logger;
 
 public class command implements CommandExecutor {
     private QueryAPIAccessor queryAPI;
+    private final Utils utils;
     private static final Logger logger = Logger.getLogger("TimePlayed");
 
-    public command(QueryAPIAccessor queryAPI) {
+    public command(QueryAPIAccessor queryAPI, Utils utils) {
         this.queryAPI = queryAPI;
+        this.utils = utils;
     }
 
     @Override
@@ -88,11 +91,14 @@ public class command implements CommandExecutor {
                     sendJoindate(sender, playerName, playerUUID);
                     return;
                 }
-                String nicknamedUuid = Utils.getNicknamedPlayer(playerName);
-                if (nicknamedUuid != null) {
-                    //player is nicknamed
-                    sender.sendMessage("No player by that username found, trying nicknames. Result may be wrong if nickname exists twice.");
-                    UUID uuid = UUID.fromString(nicknamedUuid);
+                //playername is not known, check for nicknames
+                List<String> nicknamedUuids = utils.getNicknamedPlayer(playerName);
+                if (nicknamedUuids == null || nicknamedUuids.isEmpty()) {
+                    //not a nickname
+                    sender.sendMessage("§cNo player with that nickname found");
+                } else if (nicknamedUuids.size() == 1) {
+                    //exactly one match found
+                    UUID uuid = UUID.fromString(nicknamedUuids.getFirst());
                     if (Utils.isPlayerOnline(uuid)) {
                         //real username is online
                         sendJoindate(sender, playerName, uuid);
@@ -101,10 +107,18 @@ public class command implements CommandExecutor {
                         sendJoindate(sender, Bukkit.getOfflinePlayer(uuid).getName(), uuid);
                     } else {
                         //wtf how did we get here, should not be reachable but :shrug:
-                        sender.sendMessage("Player is nicknamed, but real name could not be found automatically. Try again with their real username!");
+                        sender.sendMessage("§aPlayer is nicknamed, but real name could not be found automatically. Try again with their real username!");
                     }
                 } else {
-                    sender.sendMessage("§cThis user does not exist");
+                    sender.sendMessage("§aMultiple matches found for nickname §f" + playerName + "§a:");
+                    for (String uuid : nicknamedUuids) {
+                        if (Utils.isPlayerOnline(UUID.fromString(uuid))) {
+                            sender.sendMessage("§a" + Bukkit.getPlayer(UUID.fromString(uuid)).getName());
+                        } else {
+                            sender.sendMessage("§a" + Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName());
+                        }
+                    }
+                    sender.sendMessage("§aPlease try again with the right username from this list");
                 }
             } else {
                 //player is online
@@ -133,11 +147,14 @@ public class command implements CommandExecutor {
                     sendPlaytime(sender, playerName, playerUUID);
                     return;
                 }
-                String nicknamedUuid = Utils.getNicknamedPlayer(playerName);
-                if (nicknamedUuid != null) {
-                    //player is nicknamed
-                    sender.sendMessage("No player by that username found, trying nicknames. Result may be wrong if nickname exists twice.");
-                    UUID uuid = UUID.fromString(nicknamedUuid);
+                //playername is not known, check for nicknames
+                List<String> nicknamedUuids = utils.getNicknamedPlayer(playerName);
+                if (nicknamedUuids == null || nicknamedUuids.isEmpty()) {
+                    //not a nickname
+                    sender.sendMessage("§cNo player with that nickname found");
+                } else if (nicknamedUuids.size() == 1) {
+                    //exactly one match found
+                    UUID uuid = UUID.fromString(nicknamedUuids.getFirst());
                     if (Utils.isPlayerOnline(uuid)) {
                         //real username is online
                         sendPlaytime(sender, playerName, uuid);
@@ -146,10 +163,18 @@ public class command implements CommandExecutor {
                         sendPlaytime(sender, Bukkit.getOfflinePlayer(uuid).getName(), uuid);
                     } else {
                         //wtf how did we get here, should not be reachable but :shrug:
-                        sender.sendMessage("Player is nicknamed, but real name could not be found automatically. Try again with their real username!");
+                        sender.sendMessage("§aPlayer is nicknamed, but real name could not be found automatically. Try again with their real username!");
                     }
                 } else {
-                    sender.sendMessage("§cThis user does not exist");
+                    sender.sendMessage("§aMultiple matches found for nickname §f" + playerName + "§a:");
+                    for (String uuid : nicknamedUuids) {
+                        if (Utils.isPlayerOnline(UUID.fromString(uuid))) {
+                            sender.sendMessage("§a" + Bukkit.getPlayer(UUID.fromString(uuid)).getName());
+                        } else {
+                            sender.sendMessage("§a" + Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName());
+                        }
+                    }
+                    sender.sendMessage("§aPlease try again with the right username from this list");
                 }
             } else {
                 //player is online
@@ -162,24 +187,33 @@ public class command implements CommandExecutor {
         if (args.length != 1) {
             sender.sendMessage("§cUsage: /realnameoffline <player>");
         } else {
-            String nickName = args[0];
-            String nicknamedUuid = Utils.getNicknamedPlayer(nickName);
-            if (nicknamedUuid != null) {
-                //player is nicknamed
-                sender.sendMessage("§aOffline nickname found. Result may be wrong if nickname exists twice.");
-                UUID uuid = UUID.fromString(nicknamedUuid);
+            String playerName = args[0];
+            List<String> nicknamedUuids = utils.getNicknamedPlayer(playerName);
+            if (nicknamedUuids == null || nicknamedUuids.isEmpty()) {
+                //not a nickname
+                sender.sendMessage("§cNo player with that nickname found");
+            } else if (nicknamedUuids.size() == 1) {
+                //exactly one match found
+                UUID uuid = UUID.fromString(nicknamedUuids.getFirst());
                 if (Utils.isPlayerOnline(uuid)) {
                     //real username is online
-                    sender.sendMessage(nickName + "§ais §f" + Bukkit.getPlayer(uuid).getName());
+                    sender.sendMessage(playerName + " §ais §f" + Bukkit.getPlayer(uuid).getName());
                 } else if (Utils.offlinePlayerExists(uuid)) {
                     //real username is offline
-                    sender.sendMessage(nickName + " §ais offline and might be §f" + Bukkit.getOfflinePlayer(uuid).getName());
+                    sender.sendMessage(playerName + " §ais §f" + Bukkit.getOfflinePlayer(uuid).getName());
                 } else {
                     //wtf how did we get here, should not be reachable but :shrug:
-                    sender.sendMessage("§aNickname was found, but the corresponding player could not be identified.");
+                    sender.sendMessage("§aPlayer is nicknamed, but real name could not be identified. This is not supposed to happen.");
                 }
             } else {
-                sender.sendMessage("§cNo username found for this nickname");
+                sender.sendMessage("§aMultiple matches found for nickname §f" + playerName + "§a:");
+                for (String uuid : nicknamedUuids) {
+                    if (Utils.isPlayerOnline(UUID.fromString(uuid))) {
+                        sender.sendMessage("§a" + Bukkit.getPlayer(UUID.fromString(uuid)).getName());
+                    } else {
+                        sender.sendMessage("§a" + Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName());
+                    }
+                }
             }
         }
     }
