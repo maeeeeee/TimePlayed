@@ -67,6 +67,31 @@ public class QueryAPIAccessor {
         return Long.parseLong(totalPlaytime);
     }
 
+    public long getPlaytimeLastMonth(UUID playerUUID) {
+        LocalDateTime startOfThisMonth = LocalDateTime.now()
+                .withDayOfMonth(1)
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0);
+        long startOfThisMonthMillis = startOfThisMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        LocalDateTime startOfLastMonth = LocalDateTime.now()
+                .minusMonths(1) // Subtract one month
+                .withDayOfMonth(1) // Set to the first day of the month
+                .withHour(0) // Set hour to 0
+                .withMinute(0) // Set minute to 0
+                .withSecond(0) // Set second to 0
+                .withNano(0); // Set nanoseconds to 0
+        long startOfLastMonthMillis = startOfLastMonth.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+        UUID serverUUID = queryService.getServerUUID()
+                .orElseThrow(IllegalStateException::new);
+        return queryService.getCommonQueries().fetchPlaytime(
+                playerUUID, serverUUID, startOfLastMonthMillis, startOfThisMonthMillis
+        );
+    }
+
     public long getPlaytimeThisMonth(UUID playerUUID) {
         long now = System.currentTimeMillis();
         LocalDateTime startOfMonth = LocalDateTime.now()

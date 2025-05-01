@@ -5,6 +5,8 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -14,13 +16,17 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 public class command implements CommandExecutor {
+    private final JavaPlugin plugin;
+    private final BukkitScheduler scheduler;
     private QueryAPIAccessor queryAPI;
     private final Utils utils;
     private static final Logger logger = Logger.getLogger("TimePlayed");
 
-    public command(QueryAPIAccessor queryAPI, Utils utils) {
+    public command(QueryAPIAccessor queryAPI, Utils utils, BukkitScheduler scheduler, JavaPlugin plugin) {
         this.queryAPI = queryAPI;
         this.utils = utils;
+        this.scheduler = scheduler;
+        this.plugin = plugin;
     }
 
     @Override
@@ -30,8 +36,10 @@ public class command implements CommandExecutor {
                 commandJoindate(sender, args);
             } else if (command.getName().equalsIgnoreCase("playtime")) {
                 commandPlaytime(sender, args);
-            } else {
+            } else if (command.getName().equalsIgnoreCase("realnameoffline")) {
                 commandRealname(sender, args);
+            } else if (command.getName().equalsIgnoreCase("generatereport")) {
+                commandGeneratereport(sender, args);
             }
         } catch (java.lang.NumberFormatException e) {
             sender.sendMessage("§cThe requested username does not exist. You can use /realname to get the username of a nicknamed player if they are online! ");
@@ -216,6 +224,10 @@ public class command implements CommandExecutor {
                 }
             }
         }
+    }
+
+    private void commandGeneratereport(CommandSender sender, String[] args) {
+        //scheduler.runTaskAsynchronously(plugin, () -> utils.generatePlaytimeReport(plugin, args[0],sender,queryAPI));
     }
 
     private void sendJoindate(CommandSender sender, String playerName, UUID playerUUID) {
