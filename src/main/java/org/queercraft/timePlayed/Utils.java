@@ -3,6 +3,7 @@ package org.queercraft.timePlayed;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
@@ -52,12 +53,40 @@ public class Utils {
         return false;
     }
 
-    public static long getTotalPlaytime(UUID uuid) {
+    private static final Map<UUID, Long> oldPlaytime = new ConcurrentHashMap<>();
+
+    public void loadExtendedPlaytimeData(File dataFolder) {
+        File file = new File(dataFolder, "playtimeNova4and5.txt");
+        logger.info("Loading playtime data from Nova 4 and Nova 5...");
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 2) {
+                    UUID uuid = UUID.fromString(parts[0]);
+                    long playtime = Long.parseLong(parts[1]);
+                    oldPlaytime.put(uuid, playtime);
+                }
+            }
+            logger.info("Successfully loaded playtime data from Nova 4 and Nova 5!");
+        } catch (IOException e) {
+            logger.warning("Error trying to load past Nova playtime data");
+            logger.warning("Exception type: " + e.getClass().getName());
+            logger.warning("Message: " + e.getMessage());
+            for (StackTraceElement stackTraceLine : e.getStackTrace()) {
+                logger.warning("    at " + stackTraceLine);
+            }
+        }
+    }
+
+    public static long getTotalPlaytime(UUID uuid, boolean extendedPlaytime) {
         //Read player's statistics from .json
         File playerStatistics = new File(worldFolder, uuid + ".json");
 
+        long totalPlaytime = 0;
+
         //Player is online
-        if (Bukkit.getPlayer(uuid) != null) return getOnlineStatistic(Bukkit.getPlayer(uuid));
+        if (Bukkit.getPlayer(uuid) != null) totalPlaytime = getOnlineStatistic(Bukkit.getPlayer(uuid));
 
         //Player is offline
         if (playerStatistics.exists()) {
@@ -68,10 +97,10 @@ public class Utils {
                 JsonObject passenger = (JsonObject) pilot.get("minecraft:custom");
 
                 //Read playtime stat
-                if (passenger.get("minecraft:play_time") == null) return passenger
+                if (passenger.get("minecraft:play_time") == null) totalPlaytime = passenger
                         .get("minecraft:play_one_minute")
                         .getAsLong();
-                return passenger.get("minecraft:play_time").getAsLong();
+                totalPlaytime = passenger.get("minecraft:play_time").getAsLong();
             } catch (Exception e) {
                 logger.warning("Error trying to fetch total playtime.");
                 logger.warning("Exception type: " + e.getClass().getName());
@@ -81,7 +110,10 @@ public class Utils {
                 }
             }
         }
-        return 0;
+        if (extendedPlaytime && oldPlaytime.containsKey(uuid)) {
+            totalPlaytime += oldPlaytime.get(uuid);
+        }
+        return totalPlaytime;
     }
 
     private static final Map<UUID, Long> firstJoinTimestamps = new ConcurrentHashMap<>();
@@ -110,7 +142,7 @@ public class Utils {
         }
     }
 
-    public static String getJoinDate(UUID uuid) {
+    public static String getJoinDate(UUID uuid, boolean extendedJoindates) {
         Player player = Bukkit.getPlayer(uuid);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy");
         Calendar calendar = Calendar.getInstance();
@@ -121,13 +153,13 @@ public class Utils {
         } else if (offlinePlayerExists(uuid)) {
             firstPlayed = Bukkit.getOfflinePlayer(uuid).getFirstPlayed();
         } else return "Has never joined";
-        if (firstJoinTimestamps.containsKey(uuid)) {
+        if (extendedJoindates && firstJoinTimestamps.containsKey(uuid)) {
             long recordedTimestamp = firstJoinTimestamps.get(uuid);
             if (recordedTimestamp < firstPlayed) {
                 firstPlayed = recordedTimestamp; // Replace with the earlier timestamp
             }
         }
-        if(firstPlayed < 1000000000000L) calendar.setTimeInMillis(firstPlayed*1000);
+        if (firstPlayed < 1000000000000L) calendar.setTimeInMillis(firstPlayed * 1000);
         else calendar.setTimeInMillis(firstPlayed);
         return simpleDateFormat.format(calendar.getTime());
     }
@@ -256,22 +288,48 @@ public class Utils {
      * @param nickname the nickname to search for
      * @return the file names without extension (the player's uuid) that are associated with this nickname, or null if not found
      */
-    public synchronized List<String> getNicknamedPlayer(String nickname) {
-        return nicknameCache.entrySet().stream()
+    public synchronized List<String> getNicknamedPlayer(String nickname, CommandSender sender) {
+        List<String> exactMatches = nicknameCache.entrySet().stream()
                 .filter(entry -> entry.getValue().equalsIgnoreCase(nickname))
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+                .toList();
+//        if (!exactMatches.isEmpty()) {
+//            return exactMatches.stream().limit(10).collect(Collectors.toList());
+//        }
+        return exactMatches.stream().limit(10).collect(Collectors.toList());
+//        sender.sendMessage("§a No exact matches found. Potential matches found for:");
+//        // If no exact matches, get the fuzzy matches (limit to 5 results)
+//        // Restrict the number of fuzzy matches to 5
+//        return nicknameCache.entrySet().stream()
+//                .filter(entry -> isSimilarNickname(entry.getValue(), nickname))
+//                .map(Map.Entry::getKey)
+//                .limit(5)  // Restrict the number of fuzzy matches to 5
+//                .collect(Collectors.toList());
+    }
+
+    private boolean isSimilarNickname(String nickname, String target) {
+        // Prevent returning matches if the target nickname is too short (e.g. "L")
+        if (target.length() < 3) {
+            return false;
+        }
+
+        // Levenshtein distance check
+        LevenshteinDistance levenshtein = new LevenshteinDistance();
+        int distance = levenshtein.apply(nickname, target);
+
+        // fine tune similarity
+        return distance <= 3;
     }
 
     public void generatePlaytimeReport(JavaPlugin plugin, String month, CommandSender sender, QueryAPIAccessor queryAPI) {
         String date;
-        if(month.equals("this")){
+        if (month.equals("this")) {
             date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy_MMMM"));
-        }else if (month.equals("last")){
+        } else if (month.equals("last")) {
             LocalDate now = LocalDate.now();
             LocalDate lastMonth = now.minusMonths(1); // Go to the previous month
             date = lastMonth.format(DateTimeFormatter.ofPattern("yyyy_MMMM"));
-        }else{
+        } else {
             sender.sendMessage("Invalid input, please retry with either \"this\" or \"last\"");
             return;
         }
@@ -289,7 +347,7 @@ public class Utils {
 
         File outputFile = new File(yearFolder, date + "_playtime-report.txt");
 
-        sender.sendMessage("§aGenerating report for §f"+month+"§a month. This will take a long time (>20 minutes)");
+        sender.sendMessage("§aGenerating report for §f" + month + "§a month. This will take a long time (>20 minutes)");
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
             writer.write("Username, Playtime, UUID");
             writer.newLine();
