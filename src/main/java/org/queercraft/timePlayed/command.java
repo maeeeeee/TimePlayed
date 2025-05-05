@@ -42,6 +42,15 @@ public class command implements CommandExecutor {
                     sender.sendMessage("You do not have permission to reload the config.");
                     return false;
                 }
+            } else if (command.getName().equalsIgnoreCase("timeplayed") && args.length == 2 && args[0].equalsIgnoreCase("generatereport")){
+                if (sender.hasPermission("timeplayed.generatereport")) {
+                    // Reload the configuration
+                    scheduler.runTaskAsynchronously(plugin, () -> commandGeneratereport(sender, args));
+                    return true;
+                } else {
+                    sender.sendMessage("You do not have permission to use this command.");
+                    return false;
+                }
             } else if (command.getName().equalsIgnoreCase("joindate")) {
                 commandJoindate(sender, args);
             } else if (command.getName().equalsIgnoreCase("playtime")) {
@@ -224,7 +233,7 @@ public class command implements CommandExecutor {
     }
 
     private void commandGeneratereport(CommandSender sender, String[] args) {
-        //utils.generatePlaytimeReport(plugin, args[0],sender,queryAPI);
+        utils.generatePlaytimeReport(plugin, args[1],sender,queryAPI);
     }
 
     private void sendJoindate(CommandSender sender, String playerName, UUID playerUUID, boolean extendedJoindates) {
@@ -260,6 +269,7 @@ public class command implements CommandExecutor {
             sender.sendMessage("§aThis Month: §f" + Utils.formatTimeMillis(days30));
             sender.sendMessage("§aTotal: §f" + Utils.formatTimeMillis(totalPlaytime / 20 * 1000L)); //totalPlaytime is in ticks, needs to be converted to milliseconds
             sender.sendMessage("§aJoined on: §f" + joindate);
+            sender.sendMessage("last month playtime: "+Utils.formatTimeMillis(queryAPI.getPlaytimeLastMonth(playerUUID)));
         } catch (Exception e) {
             //DB connection went down, create new Accessor
             if (Objects.equals(e.getMessage(), "SQL Failure: database connection closed")) {

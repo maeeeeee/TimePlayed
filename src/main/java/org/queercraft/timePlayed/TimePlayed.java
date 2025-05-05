@@ -30,11 +30,14 @@ public final class TimePlayed extends JavaPlugin {
 
         boolean extendedPlaytimeEnabled = config.getBoolean("features.extendedPlaytime");
         boolean extendedJoindatesEnabled = config.getBoolean("features.extendedJoindates");
+        boolean generateReportsEnabled = config.getBoolean("features.generateReports");
 
         if (extendedPlaytimeEnabled) getLogger().info("Extended playtime enabled.");
         else getLogger().info("Extended playtime disabled.");
         if (extendedJoindatesEnabled) getLogger().info("Extended joindates enabled.");
         else getLogger().info("Extended joindates disabled.");
+        if (generateReportsEnabled) getLogger().info("Generate reports enabled.");
+        else getLogger().info("Generate reports disabled.");
 
         Utils utils = new Utils();
         scheduler.runTaskAsynchronously(this, utils::buildCache);
@@ -53,7 +56,6 @@ public final class TimePlayed extends JavaPlugin {
                 Objects.requireNonNull(getCommand("playtime")).setExecutor(new command(queryAPI, utils, scheduler, this));
                 Objects.requireNonNull(getCommand("joindate")).setExecutor(new command(queryAPI, utils, scheduler, this));
                 Objects.requireNonNull(getCommand("realnameoffline")).setExecutor(new command(queryAPI, utils, scheduler, this));
-                //Objects.requireNonNull(getCommand("generatereport")).setExecutor(new command(queryAPI, utils, scheduler, this));
             } else {
                 getLogger().warning("Failed to hook into Plan, disabling TimePlayed...");
                 getServer().getPluginManager().disablePlugin(this);

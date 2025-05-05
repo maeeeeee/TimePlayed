@@ -26,3 +26,6 @@ permissions:
   timeplayed.reload:
     description: Allows reloading of the config
     default: op
+  timeplayed.generatereport:
+    description: Allows generating playtime reports
+    default: op
