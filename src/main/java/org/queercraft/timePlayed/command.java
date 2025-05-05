@@ -45,7 +45,7 @@ public class command implements CommandExecutor {
             } else if (command.getName().equalsIgnoreCase("timeplayed") && args.length == 2 && args[0].equalsIgnoreCase("generatereport")){
                 if (sender.hasPermission("timeplayed.generatereport")) {
                     // Reload the configuration
-                    scheduler.runTaskAsynchronously(plugin, () -> commandGeneratereport(sender, args));
+                    scheduler.runTaskAsynchronously(plugin, () -> commandGeneratereport(sender, args, plugin.getConfig().getBoolean("features.generateReports")));
                     return true;
                 } else {
                     sender.sendMessage("You do not have permission to use this command.");
@@ -57,8 +57,6 @@ public class command implements CommandExecutor {
                 scheduler.runTaskAsynchronously(plugin, () -> commandPlaytime(sender, args));
             } else if (command.getName().equalsIgnoreCase("realnameoffline")) {
                 scheduler.runTaskAsynchronously(plugin, () -> commandRealname(sender, args));
-            } else if (command.getName().equalsIgnoreCase("generatereport")) {
-                scheduler.runTaskAsynchronously(plugin, () -> commandGeneratereport(sender, args));
             }
         } catch (java.lang.NumberFormatException e) {
             sender.sendMessage("§cThe requested username does not exist. You can use /realname to get the username of a nicknamed player if they are online! ");
@@ -232,8 +230,11 @@ public class command implements CommandExecutor {
         }
     }
 
-    private void commandGeneratereport(CommandSender sender, String[] args) {
-        utils.generatePlaytimeReport(plugin, args[1],sender,queryAPI);
+    private void commandGeneratereport(CommandSender sender, String[] args, boolean enabled) {
+        if (enabled){
+            utils.generatePlaytimeReport(plugin, args[1],sender,queryAPI);
+        }else sender.sendMessage("Feature is not enabled.");
+
     }
 
     private void sendJoindate(CommandSender sender, String playerName, UUID playerUUID, boolean extendedJoindates) {
