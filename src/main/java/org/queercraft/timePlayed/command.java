@@ -254,11 +254,13 @@ public class command implements CommandExecutor {
 
     private void sendPlaytime(CommandSender sender, String playerName, UUID playerUUID) {
         try {
+            boolean extendedPlaytime = plugin.getConfig().getBoolean("features.extendedPlaytime");
             long days30 = queryAPI.getPlaytimeThisMonth(playerUUID);
             long days7 = queryAPI.getPlaytimeThisWeek(playerUUID);
             long today = queryAPI.getPlaytimeToday(playerUUID);
 
-            long totalPlaytime = Utils.getTotalPlaytime(playerUUID, plugin.getConfig().getBoolean("features.extendedPlaytime"));
+            long totalPlaytime = Utils.getTotalPlaytime(playerUUID, extendedPlaytime);
+            long totalPlaytimeNova5 = Utils.getTotalPlaytime(playerUUID, false);
 
             String joindate = Utils.getJoinDate(playerUUID, plugin.getConfig().getBoolean("features.extendedJoindates"));
 
@@ -268,9 +270,10 @@ public class command implements CommandExecutor {
             sender.sendMessage("§aToday: §f" + Utils.formatTimeMillis(today));
             sender.sendMessage("§aThis Week: §f" + Utils.formatTimeMillis(days7));
             sender.sendMessage("§aThis Month: §f" + Utils.formatTimeMillis(days30));
+            sender.sendMessage("§aThis Nova: §f" + Utils.formatTimeMillis(totalPlaytimeNova5 / 20 * 1000L));
             sender.sendMessage("§aTotal: §f" + Utils.formatTimeMillis(totalPlaytime / 20 * 1000L)); //totalPlaytime is in ticks, needs to be converted to milliseconds
             sender.sendMessage("§aJoined on: §f" + joindate);
-            sender.sendMessage("last month playtime: "+Utils.formatTimeMillis(queryAPI.getPlaytimeLastMonth(playerUUID)));
+
         } catch (Exception e) {
             //DB connection went down, create new Accessor
             if (Objects.equals(e.getMessage(), "SQL Failure: database connection closed")) {

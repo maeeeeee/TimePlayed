@@ -1,10 +1,10 @@
 features:
   # Set this to true to enable extended playtime. This will take into account playtime from Nova 4 and Nova 5.
-  #Disabling this will result in only playtime from the current Nova being displayed when calling /playtime
+  # Disabling this will result in only playtime from the current Nova being displayed when calling /playtime
   extendedPlaytime: true
 
   # Set this to true to enable extended joindates. This will take into account joindates from Nova 4 and Nova 5.
-  #Disabling this will result in only the joindate from the current Nova being displayed when calling /joindate and /playtime
+  # Disabling this will result in only the joindate from the current Nova being displayed when calling /joindate and /playtime
   extendedJoindates: true
 
   # Set this to true to enable playtime report generation. This will enable operators to use /generatereport <this/last>
