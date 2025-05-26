@@ -4,26 +4,33 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitScheduler;
+import org.queercraft.timePlayed.commands.JoindateCommand;
+import org.queercraft.timePlayed.commands.PlaytimeCommand;
+import org.queercraft.timePlayed.commands.RealnameCommand;
+import org.queercraft.timePlayed.commands.TimeplayedCommand;
+import org.queercraft.timePlayed.utils.*;
+
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.logging.Logger;
 
-/*
- * THIS PLUGIN WAS BROUGHT TO YOU BY A SEVERE CASE OF STREP THROAT,
- * GITHUB COPILOT,
- * AND THE MOST CLOGGED SINUSES EVER
- * IT COMES WITH NO WARRANTY
- * GOOD LUCK!
- */
 public final class TimePlayed extends JavaPlugin {
     private QueryAPIAccessor queryAPI;
     private FileConfiguration config;
 
     @Override
     public void onEnable() {
+        NicknameUtils nicknameUtils = new NicknameUtils();
+        JoindateUtils joindateUtils = new JoindateUtils();
+        PlaytimeUtils playtimeUtils = new PlaytimeUtils();
+        ReportUtils reportUtils = new ReportUtils();
         BukkitScheduler scheduler = Bukkit.getScheduler();
-        getLogger().info("Enabling TimePlayed...");
+        PlayerResolver resolver = new PlayerResolver(nicknameUtils);
+        Logger logger = getLogger();
+        boolean extendedJoindates = getConfig().getBoolean("features.extendedJoindates");
+        logger.info("Enabling TimePlayed...");
 
         saveDefaultConfig();
         config = getConfig();
@@ -39,23 +46,23 @@ public final class TimePlayed extends JavaPlugin {
         if (generateReportsEnabled) getLogger().info("Generate reports enabled.");
         else getLogger().info("Generate reports disabled.");
 
-        Utils utils = new Utils();
-        scheduler.runTaskAsynchronously(this, utils::buildCache);
-        utils.loadCache();
-        scheduler.runTaskAsynchronously(this, () -> utils.loadFirstJoinData(this.getDataFolder()));
-        scheduler.runTaskAsynchronously(this, () -> utils.loadExtendedPlaytimeData(this.getDataFolder()));
+
+        scheduler.runTaskAsynchronously(this, nicknameUtils::buildCache);
+        nicknameUtils.loadCache();
+        scheduler.runTaskAsynchronously(this, () -> joindateUtils.loadFirstJoinData(this.getDataFolder()));
+        scheduler.runTaskAsynchronously(this, () -> playtimeUtils.loadExtendedPlaytimeData(this.getDataFolder()));
 
         // Schedule periodic cache refresh every 10 minutes (12000 ticks)
-        scheduler.runTaskTimerAsynchronously(this, utils::buildCache, 0L, 12000L);
+        scheduler.runTaskTimerAsynchronously(this, nicknameUtils::buildCache, 0L, 12000L);
 
         try {
             Optional<QueryAPIAccessor> queryAPIOptional = new PlanHook().hookIntoPlan();
             if (queryAPIOptional.isPresent()) {
                 queryAPI = queryAPIOptional.get();
-                Objects.requireNonNull(getCommand("timeplayed")).setExecutor(new command(queryAPI, utils, scheduler, this));
-                Objects.requireNonNull(getCommand("playtime")).setExecutor(new command(queryAPI, utils, scheduler, this));
-                Objects.requireNonNull(getCommand("joindate")).setExecutor(new command(queryAPI, utils, scheduler, this));
-                Objects.requireNonNull(getCommand("realnameoffline")).setExecutor(new command(queryAPI, utils, scheduler, this));
+                Objects.requireNonNull(getCommand("timeplayed")).setExecutor(new TimeplayedCommand(this, scheduler, reportUtils, queryAPI, logger));
+                Objects.requireNonNull(getCommand("playtime")).setExecutor(new PlaytimeCommand(this, scheduler, resolver, queryAPI, logger));
+                Objects.requireNonNull(getCommand("joindate")).setExecutor(new JoindateCommand(this, scheduler, resolver, extendedJoindates, logger));
+                Objects.requireNonNull(getCommand("realnameoffline")).setExecutor(new RealnameCommand(this, scheduler, nicknameUtils, logger));
             } else {
                 getLogger().warning("Failed to hook into Plan, disabling TimePlayed...");
                 getServer().getPluginManager().disablePlugin(this);
