@@ -18,7 +18,6 @@ import java.util.logging.Logger;
 
 public final class TimePlayed extends JavaPlugin {
     private QueryAPIAccessor queryAPI;
-    private FileConfiguration config;
 
     @Override
     public void onEnable() {
@@ -33,7 +32,7 @@ public final class TimePlayed extends JavaPlugin {
         logger.info("Enabling TimePlayed...");
 
         saveDefaultConfig();
-        config = getConfig();
+        FileConfiguration config = getConfig();
 
         boolean extendedPlaytimeEnabled = config.getBoolean("features.extendedPlaytime");
         boolean extendedJoindatesEnabled = config.getBoolean("features.extendedJoindates");
