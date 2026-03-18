@@ -56,14 +56,14 @@ public class PlayerResolver {
             }
         } else {
             sender.sendMessage("§aMultiple matches found for nickname §f" + playerName + "§a:");
-            for (String uuid : nicknamedUuids) {
-                UUID uid = UUID.fromString(uuid);
-                String name = PlayerUtils.isPlayerOnline(uid)
-                        ? Bukkit.getPlayer(uid).getName()
-                        : Bukkit.getOfflinePlayer(uid).getName();
-                sender.sendMessage("§a" + name);
-            }
-            sender.sendMessage("§aPlease try again with the right username from this list");
+//            for (String uuid : nicknamedUuids) {
+//                UUID uid = UUID.fromString(uuid);
+//                String name = PlayerUtils.isPlayerOnline(uid)
+//                        ? Bukkit.getPlayer(uid).getName()
+//                        : Bukkit.getOfflinePlayer(uid).getName();
+//                sender.sendMessage("§a" + name);
+//            }
+            sender.sendMessage("§aPlease try again with the real username. You can use /realname "+playerName+" to find out what it is!");
         }
     }
 }
