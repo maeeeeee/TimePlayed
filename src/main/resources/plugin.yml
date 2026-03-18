@@ -1,5 +1,5 @@
 name: TimePlayed
-version: '1.0'
+version: '1.0.1'
 main: org.queercraft.timePlayed.TimePlayed
 api-version: '1.21'
 load: POSTWORLD
@@ -20,7 +20,7 @@ commands:
     aliases: [jd]
   realnameoffline:
     description: Attempts to fetch the username corresponding to a nickname even if the player is offline. If the nickname exists more than once, the result can be inaccurate
-    usage: /realnameoffline <player>
+    usage: /realnameoffline <player> [all]
     aliases: [rno]
 permissions:
   timeplayed.reload:

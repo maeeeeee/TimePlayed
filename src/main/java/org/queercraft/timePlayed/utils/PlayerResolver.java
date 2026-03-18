@@ -41,7 +41,7 @@ public class PlayerResolver {
             return;
         }
 
-        List<String> nicknamedUuids = nicknameUtils.getNicknamedPlayer(playerName, sender);
+        List<String> nicknamedUuids = nicknameUtils.getNicknamedPlayers(playerName);
         if (nicknamedUuids == null || nicknamedUuids.isEmpty()) {
             sender.sendMessage("§cNo player with that nickname found");
         } else if (nicknamedUuids.size() == 1) {

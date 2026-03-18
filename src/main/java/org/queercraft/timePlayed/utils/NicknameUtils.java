@@ -2,8 +2,6 @@ package org.queercraft.timePlayed.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.apache.commons.text.similarity.LevenshteinDistance;
-import org.bukkit.command.CommandSender;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -11,21 +9,36 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class NicknameUtils {
+
+    public class NicknameEntry {
+        private String colored;
+        private String plain;
+
+        public NicknameEntry(String colored, String plain) {
+            this.colored = colored;
+            this.plain = plain;
+        }
+
+        public String getColored() {
+            return colored;
+        }
+
+        public String getPlain() {
+            return plain;
+        }
+    }
 
     private static final Logger logger = Logger.getLogger("TimePlayed");
 
     // Cache map for quick lookups
-    private Map<String, String> nicknameCache = new HashMap<>();
-    private final String CACHE_FILE = "nickname_cache.json";
+    private Map<String, NicknameEntry> nicknameCache = new HashMap<>();
+    private final String CACHE_FILE = "plugins/TimePlayed/nickname_cache.json";
 
     public void buildCache() {
         logger.info("Starting nickname cache refresh...");
@@ -44,7 +57,7 @@ public class NicknameUtils {
                 return;
             }
 
-            Map<String, String> cache = new HashMap<>();
+            Map<String, NicknameEntry> cache = new HashMap<>();
 
             // Traverse the directory to find .yml files
             Files.walk(dirPath)
@@ -64,7 +77,7 @@ public class NicknameUtils {
                                     fileName = fileName.contains(".") ? fileName.substring(0, fileName.lastIndexOf('.')) : fileName;
 
                                     // Add to cache
-                                    cache.put(fileName, plainNickname);
+                                    cache.put(fileName, new NicknameEntry(nicknameWithColor, plainNickname));
                                     break; // Stop after finding the nickname
                                 }
                             }
@@ -100,7 +113,7 @@ public class NicknameUtils {
     public void loadCache() {
         Gson gson = new Gson();
         try (Reader reader = new FileReader(CACHE_FILE)) {
-            Type type = new TypeToken<Map<String, String>>() {
+            Type type = new TypeToken<Map<String, NicknameEntry>>() {
             }.getType();
             nicknameCache = gson.fromJson(reader, type);
             logger.info("Cache loaded.");
@@ -117,36 +130,15 @@ public class NicknameUtils {
         }
     }
 
-    public synchronized List<String> getNicknamedPlayer(String nickname, CommandSender sender) {
-        List<String> exactMatches = nicknameCache.entrySet().stream()
-                .filter(entry -> entry.getValue().equalsIgnoreCase(nickname))
+    public synchronized List<String> getNicknamedPlayers(String nickname) {
+        List<String> partialMatches = nicknameCache.entrySet().stream()
+                .filter(entry -> entry.getValue().getPlain().toLowerCase().contains(nickname.toLowerCase()))
                 .map(Map.Entry::getKey)
                 .toList();
-//        if (!exactMatches.isEmpty()) {
-//            return exactMatches.stream().limit(10).collect(Collectors.toList());
-//        }
-        return exactMatches.stream().limit(10).collect(Collectors.toList());
-//        sender.sendMessage("§a No exact matches found. Potential matches found for:");
-//        // If no exact matches, get the fuzzy matches (limit to 5 results)
-//        // Restrict the number of fuzzy matches to 5
-//        return nicknameCache.entrySet().stream()
-//                .filter(entry -> isSimilarNickname(entry.getValue(), nickname))
-//                .map(Map.Entry::getKey)
-//                .limit(5)  // Restrict the number of fuzzy matches to 5
-//                .collect(Collectors.toList());
+        return new ArrayList<>(partialMatches);
     }
 
-    private boolean isSimilarNickname(String nickname, String target) {
-        // Prevent returning matches if the target nickname is too short (e.g. "L")
-        if (target.length() < 3) {
-            return false;
-        }
-
-        // Levenshtein distance check
-        LevenshteinDistance levenshtein = new LevenshteinDistance();
-        int distance = levenshtein.apply(nickname, target);
-
-        // fine tune similarity
-        return distance <= 3;
+    public synchronized NicknameEntry getNicknameForUUID(UUID uuid) {
+        return nicknameCache.getOrDefault(uuid.toString(), null);
     }
 }
