@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("xyz.jpenilla.run-paper") version "3.0.2"
 }
 
 group = 'org.queercraft'
@@ -10,7 +10,7 @@ dependencies {
     implementation 'org.apache.commons:commons-text:1.12.0'
     implementation 'com.google.code.gson:gson:2.13.1'
     implementation 'com.github.Querz:NBT:6.1'
-    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly("io.papermc.paper:paper-api:26.2.build.92-stable")
     implementation 'com.github.plan-player-analytics:Plan:5.6.2965'
     compileOnly 'com.github.plan-player-analytics:Plan:5.6.2965'
     testCompileOnly 'com.github.plan-player-analytics:Plan:5.6.2965'
@@ -21,11 +21,11 @@ tasks {
         // Configure the Minecraft version for our task.
         // This is the only required configuration besides applying the plugin.
         // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21")
+        minecraftVersion("26.2")
     }
 }
 
-def targetJavaVersion = 21
+def targetJavaVersion = 25
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion

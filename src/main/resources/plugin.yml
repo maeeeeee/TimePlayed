@@ -1,7 +1,7 @@
 name: TimePlayed
 version: '1.0.1'
 main: org.queercraft.timePlayed.TimePlayed
-api-version: '1.21'
+api-version: '26.2'
 load: POSTWORLD
 depend: [Plan]
 softdepend: [Plan]
